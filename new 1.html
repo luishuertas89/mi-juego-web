@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página Web con Juegos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 {
+            color: #333;
+        }
+        nav {
+            background-color: #333;
+            color: white;
+            padding: 15px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 18px;
+        }
+        nav a:hover {
+            background-color: #444;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        nav .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        nav .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #333;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        nav .dropdown-content a {
+            color: white;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        nav .dropdown-content a:hover {
+            background-color: #575757;
+        }
+        nav .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .game-container {
+            margin-top: 70px;
+        }
+        .game-section {
+            display: none;
+        }
+        .number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            text-align: center;
+            line-height: 30px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .guessed {
+            background-color: #e74c3c; /* Rojo para números incorrectos */
+        }
+        .correct {
+            background-color: #2ecc71; /* Verde para el número correcto */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Menú de navegación -->
+    <nav>
+        <a href="#" onclick="loadGame('home')">Inicio</a>
+        <div class="dropdown">
+            <a href="#">Juegos</a>
+            <div class="dropdown-content">
+                <a href="#" onclick="loadGame('guessNumber')">Adivinanza de Números</a>
+                <a href="#" onclick="loadGame('clickObject')">Clic en los Objetos</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sección para los juegos -->
+    <div id="gameContainer">
+        <!-- Página de inicio -->
+        <div id="home">
+            <h2>Bienvenido a la Página de Juegos</h2>
+            <p>Selecciona un juego desde el menú de arriba.</p>
+        </div>
+
+        <!-- Juego 1: Adivinanza de Números -->
+        <div id="guessNumber" class="game-section">
+            <h2>Juego de Adivinanza de Números</h2>
+            <p>Adivina un número entre 1 y 100.</p>
+            <input type="number" id="userGuess" min="1" max="100" placeholder="Tu suposición" />
+            <button onclick="checkGuess()">Adivinar</button>
+            <button onclick="resetGame1()">Reiniciar Juego</button>
+            <p id="message"></p>
+            <h3>Número de intentos: <span id="attemptsCount">0</span></h3>
+            <div id="numbersGrid"></div>
+        </div>
+
+        <!-- Juego 2: Clic en los Objetos -->
+        <div id="clickObject" class="game-section">
+            <h2>Juego de Clic en los Objetos</h2>
+            <p>Haz clic en los círculos para ganar puntos.</p>
+            <canvas id="gameCanvas" width="600" height="400"></canvas>
+            <br>
+            <p><strong>Puntos: </strong><span id="score">0</span></p>
+            <p><strong>Tiempo jugado: </strong><span id="timePlayed">0</span> segundos</p>
+            <button onclick="startGame()">Iniciar Juego</button>
+            <button onclick="resetGame2()">Reiniciar Juego</button>
+            <p id="message"></p>
+        </div>
+    </div>
+
+    <script>
+        // Cargar el juego seleccionado
+        function loadGame(game) {
+            // Ocultar todas las secciones de juego
+            const gameSections = document.querySelectorAll('.game-section');
+            gameSections.forEach(section => {
+                section.style.display = 'none';
+            });
+
+            // Mostrar la sección correspondiente al juego seleccionado
+            if (game === 'home') {
+                document.getElementById('home').style.display = 'block';
+            } else {
+                document.getElementById(game).style.display = 'block';
+            }
+        }
+
+        // Juego 1: Adivinanza de Números
+        let randomNumber = Math.floor(Math.random() * 100) + 1; // Número aleatorio entre 1 y 100
+        let attempts = 0; // Contador de intentos
+
+        // Crear la cuadrícula de números del 1 al 100
+        function createNumbersGrid() {
+            const grid = document.getElementById("numbersGrid");
+            grid.innerHTML = ''; // Limpiar la cuadrícula antes de llenarla nuevamente
+
+            // Crear los números del 1 al 100 en divs
+            for (let i = 1; i <= 100; i++) {
+                const numberDiv = document.createElement("div");
+                numberDiv.classList.add("number");
+                numberDiv.textContent = i;
+                numberDiv.setAttribute("data-number", i);
+                grid.appendChild(numberDiv);
+            }
+        }
+
+        // Función que maneja el clic sobre los números (aunque no tiene acción aquí)
+        function handleNumberClick(number) {}
+
+        // Función que comprueba si la suposición es correcta
+        function checkGuess() {
+            let userGuess = document.getElementById("userGuess").value;
+            let message = document.getElementById("message");
+
+            // Validación para números fuera de rango
+            if (userGuess < 1 || userGuess > 100) {
+                alert("Por favor, ingresa un número entre 1 y 100.");
+                return; // Salir de la función sin hacer más comprobaciones
+            }
+
+            // Incrementar el número de intentos
+            attempts++;
+            document.getElementById("attemptsCount").textContent = attempts;
+
+            // Verificar si el número ingresado es correcto
+            if (userGuess == randomNumber) {
+                message.textContent = `¡Correcto! Adivinaste el número en ${attempts} intentos.`;
+                message.style.color = "#2ecc71"; // Color verde para éxito
+                highlightNumber(userGuess, 'correct');
+            } else {
+                message.textContent = userGuess < randomNumber ? "Demasiado bajo. Intenta con un número más alto." : "Demasiado alto. Intenta con un número más bajo.";
+                message.style.color = "#e74c3c"; // Color rojo para error
+                highlightNumber(userGuess, 'guessed');
+            }
+
+            // Limpiar el campo de entrada
+            document.getElementById("userGuess").value = "";
+        }
+
+        // Función para sombrear los números al hacer clic
+        function highlightNumber(number, status) {
+            const numberDiv = document.querySelector(`.number[data-number='${number}']`);
+            if (status === 'guessed') {
+                numberDiv.classList.add("guessed"); // Rojo para números incorrectos
+            } else if (status === 'correct') {
+                numberDiv.classList.add("correct"); // Verde para el número correcto
+            }
+        }
+
+        // Función para reiniciar el juego 1 (Adivinanza de Números)
+        function resetGame1() {
+            randomNumber = Math.floor(Math.random() * 100) + 1; // Generar un nuevo número aleatorio
+            attempts = 0; // Resetear el contador de intentos
+
+            // Limpiar los mensajes y el campo de entrada
+            document.getElementById("message").textContent = "";
+            document.getElementById("userGuess").value = "";
+
+            // Resetear el contador de intentos
+            document.getElementById("attemptsCount").textContent = "0";
+
+            // Limpiar la cuadrícula de números
+            const numberDivs = document.querySelectorAll(".number");
+            numberDivs.forEach(div => {
+                div.classList.remove("guessed", "correct");
+            });
+        }
+
+        // Inicializar la cuadrícula de números al cargar la página
+        createNumbersGrid();
+
+        // Detectar cuando se presiona la tecla Enter
+        document.getElementById("userGuess").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                checkGuess(); // Ejecutar la función de adivinanza cuando se presiona Enter
+            }
+        });
+
+        // Juego 2: Clic en los Objetos
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        let score = 0;
+        let gameInterval;
+        let timerCheck; // Asegúrate de que esta variable esté definida
+        let currentCircle = null;
+        let secondsPlayed = 0;
+        let startTime; // Variable para almacenar el tiempo de inicio
+        let gameEnded = false; // Flag para evitar reiniciar el temporizador
+
+        // Iniciar el juego
+        function startGame() {
+            if (gameEnded) return; // Evitar que el juego se reinicie si ya ha terminado
+
+            // Inicializar puntaje y tiempo jugado
+            score = 0;
+            secondsPlayed = 0;
+            document.getElementById("score").textContent = score;
+            document.getElementById("timePlayed").textContent = secondsPlayed;
+
+            // Marcar el tiempo de inicio
+            startTime = Date.now();
+
+            // Intervalo para generar círculos cada segundo
+            gameInterval = setInterval(generateCircle, 1000);
+
+            // Deshabilitar el botón "Iniciar Juego" mientras el juego está en curso
+            document.querySelector("button").disabled = true;
+
+            // Verificar el tiempo y terminar el juego después de 30 segundos
+            timerCheck = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                document.getElementById("timePlayed").textContent = elapsed;
+
+                if (elapsed >= 30) {
+                    clearInterval(gameInterval); // Detener el intervalo de círculos
+                    clearInterval(timerCheck); // Detener el temporizador
+                    gameEnded = true; // Marcar el juego como terminado
+
+                    document.getElementById("message").textContent = `¡Juego terminado! Puntos finales: ${score} | Tiempo jugado: ${elapsed} segundos`;
+                    document.getElementById("message").style.color = "#2ecc71"; // Color verde para el mensaje final
+
+                    // Habilitar el botón "Iniciar Juego" para comenzar de nuevo
+                    document.querySelector("button").disabled = false;
+
+                    // Deshabilitar la interacción con el canvas después de 30 segundos
+                    canvas.removeEventListener("click", handleClick); // Desactivar el clic en el canvas
+                }
+            }, 1000); // Comprobar cada segundo si han pasado 30 segundos
+        }
+
+        // Generar un círculo aleatorio en el canvas
+        function generateCircle() {
+            const randomColor = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
+
+            const x = Math.random() * (canvas.width - 50) + 25;
+            const y = Math.random() * (canvas.height - 50) + 25;
+
+            const radius = Math.random() * 30 + 20;
+
+            currentCircle = { x, y, radius, color: randomColor };
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpiar el canvas
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = randomColor;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        // Detectar clic en el canvas
+        function handleClick(event) {
+            if (gameEnded) return; // No permitir hacer clic si el juego ha terminado
+
+            const mouseX = event.offsetX;
+            const mouseY = event.offsetY;
+
+            // Verificar si el clic está dentro del círculo
+            if (currentCircle) {
+                const dx = mouseX - currentCircle.x;
+                const dy = mouseY - currentCircle.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < currentCircle.radius) {
+                    score++; // Aumentar los puntos
+                    document.getElementById("score").textContent = score;
+                    generateCircle(); // Generar un nuevo círculo
+                }
+            }
+        }
+
+        canvas.addEventListener("click", handleClick);
+
+        // Función para reiniciar el juego 2
+        function resetGame2() {
+            // Detener los intervalos activos
+            clearInterval(gameInterval);
+            clearInterval(timerCheck);
+
+            // Resetear los valores del juego
+            score = 0;
+            secondsPlayed = 0;
+            gameEnded = false;
+            document.getElementById("score").textContent = score;
+            document.getElementById("timePlayed").textContent = secondsPlayed;
+            document.getElementById("message").textContent = "";
+
+            // Limpiar el canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Habilitar el botón "Iniciar Juego"
+            document.querySelector("button").disabled = false;
+
+            // Rehabilitar la capacidad de hacer clic
+            canvas.addEventListener("click", handleClick);
+        }
+    </script>
+</body>
+</html>
